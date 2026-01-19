@@ -1,3 +1,2 @@
-2026/01/17-12:29:26.504 647d Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Session Storage/MANIFEST-000001
-2026/01/17-12:29:26.510 647d Recovering log #3
-2026/01/17-12:29:26.513 647d Reusing old log /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Session Storage/000003.log 
+2026/01/19-18:13:12.971 183a4 Creating DB /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Session Storage since it was missing.
+2026/01/19-18:13:12.979 183a4 Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Session Storage/MANIFEST-000001

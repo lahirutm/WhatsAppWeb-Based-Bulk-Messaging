@@ -30,8 +30,9 @@ class ApiController
 
         $apiKey = $input['api_key'] ?? '';
         $sender = $input['sender'] ?? '';
-        $number = $input['number'] ?? '';
+        $number = preg_replace('/[^0-9]/', '', $input['number'] ?? '');
         $message = $input['message'] ?? '';
+        $scheduledAt = $input['scheduled_at'] ?? null;
 
         if (empty($apiKey) || empty($sender) || empty($number) || empty($message)) {
             http_response_code(400);
@@ -49,8 +50,35 @@ class ApiController
 
         if (!$instance) {
             http_response_code(401);
-            echo json_encode(['status' => 'error', 'message' => 'Invalid API Key, Sender Number, or Instance not connected']);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid API Key, Sender Number, or Instance not found']);
             return;
+        }
+
+        if ($instance['status'] !== 'connected') {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'WhatsApp instance is not connected. Please connect it from the dashboard.']);
+            return;
+        }
+
+        // Validate scheduled time if provided
+        $isScheduled = false;
+        $status = 'pending';
+        if (!empty($scheduledAt)) {
+            $scheduledTime = strtotime($scheduledAt);
+            if ($scheduledTime === false) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Invalid scheduled_at format. Use ISO 8601 format (e.g., 2026-01-20T14:30:00+05:30)']);
+                return;
+            }
+            if ($scheduledTime <= time()) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Scheduled time must be in the future']);
+                return;
+            }
+            $isScheduled = true;
+            $status = 'scheduled';
+            // Convert to MySQL datetime format
+            $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
         }
 
         try {
@@ -80,21 +108,30 @@ class ApiController
             $stmt->bindParam(':user_id', $instance['user_id']);
             $stmt->execute();
 
-            $stmt = $this->db->prepare("INSERT INTO messages (user_id, instance_id, phone, body, status, is_api) VALUES (:user_id, :instance_id, :phone, :body, 'pending', 1)");
+            $stmt = $this->db->prepare("INSERT INTO messages (user_id, instance_id, phone, body, status, is_api, is_scheduled, scheduled_at) VALUES (:user_id, :instance_id, :phone, :body, :status, 1, :is_scheduled, :scheduled_at)");
             $stmt->bindParam(':user_id', $instance['user_id']);
             $stmt->bindParam(':instance_id', $instance['id']);
             $stmt->bindParam(':phone', $number);
             $stmt->bindParam(':body', $message);
+            $stmt->bindParam(':status', $status);
+            $stmt->bindParam(':is_scheduled', $isScheduled, PDO::PARAM_BOOL);
+            $stmt->bindParam(':scheduled_at', $scheduledAt);
             $stmt->execute();
 
             $this->db->commit();
 
-            echo json_encode([
+            $response = [
                 'status' => 'success',
-                'message' => 'Message queued successfully',
+                'message' => $isScheduled ? 'Message scheduled successfully' : 'Message queued successfully',
                 'message_id' => $this->db->lastInsertId(),
                 'credits_remaining' => $user['message_credits'] - 1
-            ]);
+            ];
+
+            if ($isScheduled) {
+                $response['scheduled_at'] = $scheduledAt;
+            }
+
+            echo json_encode($response);
         } catch (PDOException $e) {
             $this->db->rollBack();
             http_response_code(500);

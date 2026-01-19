@@ -1,3 +1,2 @@
-2026/01/17-12:29:25.511 643b Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Extension State/MANIFEST-000001
-2026/01/17-12:29:25.512 643b Recovering log #3
-2026/01/17-12:29:25.512 643b Reusing old log /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Extension State/000003.log 
+2026/01/19-18:13:13.134 18376 Creating DB /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Extension State since it was missing.
+2026/01/19-18:13:13.140 18376 Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Extension State/MANIFEST-000001

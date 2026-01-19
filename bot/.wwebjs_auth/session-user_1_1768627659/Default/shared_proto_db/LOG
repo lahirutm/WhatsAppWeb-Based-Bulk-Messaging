@@ -1,3 +1,2 @@
-2026/01/17-12:29:25.364 643f Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/shared_proto_db/MANIFEST-000001
-2026/01/17-12:29:25.364 643f Recovering log #3
-2026/01/17-12:29:25.367 643f Reusing old log /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/shared_proto_db/000003.log 
+2026/01/19-18:13:13.016 1837a Creating DB /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/shared_proto_db since it was missing.
+2026/01/19-18:13:13.026 1837a Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/shared_proto_db/MANIFEST-000001

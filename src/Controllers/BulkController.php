@@ -21,6 +21,20 @@ class BulkController
             header("Location: /dashboard");
             exit;
         }
+        $userId = $_SESSION['user_id'];
+        $stmt = $this->db->prepare("SELECT id, name FROM templates WHERE user_id = :user_id ORDER BY name ASC");
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+        $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get instance status
+        $stmt = $this->db->prepare("SELECT status FROM instances WHERE id = :id AND user_id = :user_id");
+        $stmt->bindParam(':id', $instanceId);
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+        $instance = $stmt->fetch(PDO::FETCH_ASSOC);
+        $instanceStatus = $instance['status'] ?? 'disconnected';
+
         require_once __DIR__ . '/../../views/bulk_send.php';
     }
 
@@ -29,6 +43,7 @@ class BulkController
         $instanceId = $_POST['instance_id'];
         $body = $_POST['body'];
         $userId = $_SESSION['user_id'];
+        $scheduledAt = $_POST['scheduled_at'] ?? null;
         $numbers = [];
 
         // Handle CSV Upload
@@ -58,6 +73,44 @@ class BulkController
 
         if ($totalCount == 0) {
             $error = "No valid numbers found.";
+            require_once __DIR__ . '/../../views/bulk_send.php';
+            return;
+        }
+
+        // Validate scheduled time if provided
+        $isScheduled = false;
+        $status = 'pending';
+        if (!empty($scheduledAt)) {
+            $scheduledTime = strtotime($scheduledAt);
+            if ($scheduledTime === false) {
+                $error = "Invalid scheduled date/time format";
+                require_once __DIR__ . '/../../views/bulk_send.php';
+                return;
+            }
+            if ($scheduledTime <= time()) {
+                $error = "Scheduled time must be in the future";
+                require_once __DIR__ . '/../../views/bulk_send.php';
+                return;
+            }
+            $isScheduled = true;
+            $status = 'scheduled';
+            // Convert to MySQL datetime format
+            $scheduledAt = date('Y-m-d H:i:s', $scheduledTime);
+        }
+
+        // Check instance status
+        $stmt = $this->db->prepare("SELECT status FROM instances WHERE id = :id AND user_id = :user_id");
+        $stmt->bindParam(':id', $instanceId);
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+        $instance = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$instance || $instance['status'] !== 'connected') {
+            $error = "WhatsApp instance is not connected. Please connect it from the dashboard.";
+            $stmt = $this->db->prepare("SELECT id, name FROM templates WHERE user_id = :user_id ORDER BY name ASC");
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+            $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
             require_once __DIR__ . '/../../views/bulk_send.php';
             return;
         }
@@ -98,7 +151,7 @@ class BulkController
             }
 
             // Create Batch
-            $batchName = "Batch " . date("Y-m-d H:i:s");
+            $batchName = $isScheduled ? "Scheduled Batch " . date("Y-m-d H:i:s") : "Batch " . date("Y-m-d H:i:s");
             $stmt = $this->db->prepare("INSERT INTO batches (user_id, instance_id, name, total_count) VALUES (:user_id, :instance_id, :name, :total_count)");
             $stmt->bindParam(':user_id', $userId);
             $stmt->bindParam(':instance_id', $instanceId);
@@ -108,14 +161,18 @@ class BulkController
             $batchId = $this->db->lastInsertId();
 
             // Insert Messages
-            $stmt = $this->db->prepare("INSERT INTO messages (user_id, instance_id, batch_id, phone, body, media_path, status) VALUES (:user_id, :instance_id, :batch_id, :phone, :body, :media_path, 'pending')");
+            $stmt = $this->db->prepare("INSERT INTO messages (user_id, instance_id, batch_id, phone, body, media_path, status, is_scheduled, scheduled_at) VALUES (:user_id, :instance_id, :batch_id, :phone, :body, :media_path, :status, :is_scheduled, :scheduled_at)");
             foreach ($numbers as $phone) {
+                $phone = preg_replace('/[^0-9]/', '', $phone);
                 $stmt->bindParam(':user_id', $userId);
                 $stmt->bindParam(':instance_id', $instanceId);
                 $stmt->bindParam(':batch_id', $batchId);
                 $stmt->bindParam(':phone', $phone);
                 $stmt->bindParam(':body', $body);
                 $stmt->bindParam(':media_path', $mediaPath);
+                $stmt->bindParam(':status', $status);
+                $stmt->bindParam(':is_scheduled', $isScheduled, PDO::PARAM_BOOL);
+                $stmt->bindParam(':scheduled_at', $scheduledAt);
                 $stmt->execute();
             }
 

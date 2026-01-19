@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard - WhatsApp App</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -59,8 +60,8 @@
                             <?php echo $instance['created_at']; ?>
                         </td>
                         <td>
-                            <a href="/send-message?instance_id=<?php echo $instance['id']; ?>"
-                                class="btn btn-primary btn-sm">Send Message</a>
+                            <a href="/chat?instance_id=<?php echo $instance['id']; ?>"
+                                class="btn btn-primary btn-sm">Chat</a>
                             <a href="/bulk-send?instance_id=<?php echo $instance['id']; ?>"
                                 class="btn btn-warning btn-sm">Bulk Send</a>
                             <?php if ($instance['status'] == 'connected'): ?>
@@ -79,6 +80,7 @@
             </tbody>
         </table>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

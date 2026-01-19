@@ -89,6 +89,42 @@ function startSession(instanceId, sessionName, isNew = false, socket = null) {
         client.destroy();
     });
 
+    client.on('message', async (msg) => {
+        console.log(`Incoming message from ${msg.from}: ${msg.body}`);
+
+        if (msg.from.endsWith('@c.us')) {
+            const phone = msg.from.replace('@c.us', '').replace(/\D/g, '');
+            try {
+                const [inst] = await db.query("SELECT user_id FROM instances WHERE id = ?", [instanceId]);
+                const userId = inst.length > 0 ? inst[0].user_id : null;
+
+                let mediaPath = null;
+                if (msg.hasMedia) {
+                    try {
+                        const media = await msg.downloadMedia();
+                        if (media) {
+                            const fs = require('fs');
+                            const path = require('path');
+                            const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.${media.mimetype.split('/')[1]}`;
+                            const fullPath = path.join('/var/www/html/wwebjs/public/uploads/inbound', filename);
+                            fs.writeFileSync(fullPath, media.data, { encoding: 'base64' });
+                            mediaPath = `/uploads/inbound/${filename}`;
+                        }
+                    } catch (mediaErr) {
+                        console.error("Error downloading inbound media:", mediaErr);
+                    }
+                }
+
+                await db.query(
+                    "INSERT INTO messages (user_id, instance_id, phone, body, status, direction, message_id, media_path, created_at, sent_at) VALUES (?, ?, ?, ?, 'sent', 'inbound', ?, ?, NOW(), NOW())",
+                    [userId, instanceId, phone, msg.body || '', msg.id._serialized, mediaPath]
+                );
+            } catch (err) {
+                console.error("Error saving inbound message:", err);
+            }
+        }
+    });
+
     client.initialize();
     clients[instanceId] = client;
 }
@@ -134,6 +170,14 @@ const lastSentTime = {}; // instanceId -> timestamp
 
 async function processQueue() {
     try {
+        // First, move scheduled messages to pending when their time arrives
+        await db.query(`
+            UPDATE messages 
+            SET status = 'pending', is_scheduled = 0 
+            WHERE status = 'scheduled' 
+            AND scheduled_at <= NOW()
+        `);
+
         const [messages] = await db.query("SELECT * FROM messages WHERE status = 'pending' ORDER BY created_at ASC LIMIT 10");
 
         for (const msg of messages) {
@@ -158,20 +202,26 @@ async function processQueue() {
                     chatId += '@c.us';
                 }
 
+                let sentMsg;
+                const options = { sendSeen: false };
+                if (msg.reply_to_id) {
+                    options.quotedMessageId = msg.reply_to_id;
+                }
+
                 if (msg.media_path) {
                     try {
                         const media = MessageMedia.fromFilePath('/var/www/html/wwebjs/public' + msg.media_path);
-                        await client.sendMessage(chatId, media, { caption: msg.body, sendSeen: false });
+                        sentMsg = await client.sendMessage(chatId, media, { ...options, caption: msg.body });
                     } catch (mediaError) {
                         console.error('Error creating/sending media:', mediaError);
                         // Fallback to text only if media fails
-                        await client.sendMessage(chatId, msg.body + "\n[Image Failed]", { sendSeen: false });
+                        sentMsg = await client.sendMessage(chatId, msg.body + "\n[Image Failed]", options);
                     }
                 } else {
-                    await client.sendMessage(chatId, msg.body, { sendSeen: false });
+                    sentMsg = await client.sendMessage(chatId, msg.body, options);
                 }
 
-                await db.query("UPDATE messages SET status = 'sent', sent_at = NOW() WHERE id = ?", [msg.id]);
+                await db.query("UPDATE messages SET status = 'sent', sent_at = NOW(), message_id = ? WHERE id = ?", [sentMsg.id._serialized, msg.id]);
                 lastSentTime[msg.instance_id] = now;
                 console.log(`Message ${msg.id} sent`);
             } catch (err) {

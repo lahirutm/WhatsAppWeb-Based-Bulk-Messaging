@@ -1,0 +1,13 @@
+nohup: ignoring input
+Server running on port 3000
+Restoring session for instance 2
+/var/www/html/wwebjs/bot/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:174
+                throw new Error(`The browser is already running for ${launchArgs.userDataDir}. Use a different \`userDataDir\` or stop the running browser first.`);
+                      ^
+
+Error: The browser is already running for /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768628279. Use a different `userDataDir` or stop the running browser first.
+    at ChromeLauncher.launch (/var/www/html/wwebjs/bot/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:174:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Client.initialize (/var/www/html/wwebjs/bot/node_modules/whatsapp-web.js/src/Client.js:331:23)
+
+Node.js v19.9.0

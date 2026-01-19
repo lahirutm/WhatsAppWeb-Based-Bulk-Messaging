@@ -22,6 +22,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
+                            <th>Name</th>
                             <th>Role</th>
                             <th>Status</th>
                             <th>Credits</th>
@@ -37,6 +38,9 @@
                                 </td>
                                 <td>
                                     <?php echo htmlspecialchars($user['username']); ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars($user['name'] ?? '-'); ?>
                                 </td>
                                 <td>
                                     <span class="badge bg-<?php
@@ -73,8 +77,9 @@
                                         <a href="/users/password/<?php echo $user['id']; ?>" class="btn btn-sm btn-info">
                                             Password
                                         </a>
-                                        <a href="/users/credits/<?php echo $user['id']; ?>" class="btn btn-sm btn-primary">
-                                            Credits
+                                        <a href="/users/assign-package/<?php echo $user['id']; ?>"
+                                            class="btn btn-sm btn-success">
+                                            Assign Package
                                         </a>
                                     </div>
                                 </td>

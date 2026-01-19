@@ -1,3 +1,2 @@
-2026/01/17-12:29:25.097 6447 Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Site Characteristics Database/MANIFEST-000001
-2026/01/17-12:29:25.097 6447 Recovering log #3
-2026/01/17-12:29:25.103 6447 Reusing old log /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Site Characteristics Database/000003.log 
+2026/01/19-18:13:12.773 18383 Creating DB /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Site Characteristics Database since it was missing.
+2026/01/19-18:13:12.784 18383 Reusing MANIFEST /var/www/html/wwebjs/bot/.wwebjs_auth/session-user_1_1768627659/Default/Site Characteristics Database/MANIFEST-000001
